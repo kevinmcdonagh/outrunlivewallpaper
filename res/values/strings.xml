@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- General -->
+    <skip />
+    <string name="wallpapers">Outrun LiveWallpaper</string>
+    <string name="title">Outrun</string>
+    <string name="description">Ease the pain of being away from your Testerrossa by carrying the experience of open road.</string>
+</resources>

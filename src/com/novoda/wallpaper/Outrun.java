@@ -23,8 +23,10 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Handler;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
@@ -50,22 +52,19 @@ public class Outrun extends WallpaperService {
     
     class OutRunEngine extends Engine {
 
-		OutRunEngine() {
+    	OutRunEngine() {
         	Resources res = getResources();
-        	int id =0;
+        	
+        	horizonId = res.getIdentifier("horiz000", "drawable", "com.novoda.wallpaper");
+        	
         	for (int i = 0; i< FRONT_RES; i++) {
-        		id = res.getIdentifier("front_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
-        		mFrontPics[i] = BitmapFactory.decodeResource(res, id);
+        		mFrontPicIds[i] = res.getIdentifier("car_front_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
         	}
-        	id=0;
         	for (int i = 0; i< LEFT_RES; i++) {
-        		id = res.getIdentifier("left_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
-        		mLeftPics[i] = BitmapFactory.decodeResource(res, id);
+        		mLeftPicIds[i] = res.getIdentifier("left_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
         	}
-        	id=0;
         	for (int i = 0; i< RIGHT_RES; i++) {
-        		id = res.getIdentifier("right_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
-        		mRightPics[i] = BitmapFactory.decodeResource(res, id);
+        		mRightPicIds[i] = res.getIdentifier("right_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
         	}
         }
         
@@ -94,13 +93,6 @@ public class Outrun extends WallpaperService {
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
-            float w = mFrontPics[0].getWidth();
-            float h = mFrontPics[0].getHeight();
-            float s = width / (float)w;
-            mMatrix.reset();
-            mMatrix.setScale(s, s);
-            
-            mPosY = (height - (h * s)) / 2f;
             drawFrame();
         }
 
@@ -176,6 +168,7 @@ public class Outrun extends WallpaperService {
                 c = holder.lockCanvas();
                 if (c != null) {
                 	c.save();
+                	drawHorizon(c);
                 	drawCar(c);
                     c.restore();
                 }
@@ -194,13 +187,13 @@ public class Outrun extends WallpaperService {
     		
         	if(takingACorner){
         		if(currentDirection == DRIVING_RIGHT){
-	        		drawAnim(c, mRightPics);        			
+	        		drawAnim(c, mRightPicIds, 549);        			
         		}else{
-	        		drawAnim(c, mLeftPics);
+	        		drawAnim(c, mLeftPicIds, 549);
         		}
     		}else{
 	        	if(!mDragEventInProgress){
-	        		drawAnim(c, mFrontPics);
+	        		drawAnim(c, mFrontPicIds, 549);
 	        	}else{
 /*
  * Uncomment this to respond 
@@ -215,9 +208,25 @@ public class Outrun extends WallpaperService {
 	        	}
     		}
 		}
+        
+        private void drawHorizon(Canvas c){
+        	
+        	Paint mBackgroundPaint = new Paint();
+        	mBackgroundPaint.setColor(getResources().getColor(R.color.horiz_000));
+        	mBackgroundPaint.setStyle(Paint.Style.FILL);
+        	Rect mBackgroundRect = new Rect();
+        	mBackgroundRect.set(0, 0, 480, 325);
+        	c.drawRect(mBackgroundRect, mBackgroundPaint);
+        	
+        	c.drawBitmap(BitmapFactory.decodeResource(getResources(), horizonId), 0, 325, null);
 
-        void drawAnim(Canvas c, Bitmap[] pics) {
-        	c.drawBitmap(pics[picIdx], mMatrix, mPaint);
+        	mBackgroundPaint.setColor(getResources().getColor(R.color.ROAD));
+        	mBackgroundRect.set(0, 685, 480, 800);
+        	c.drawRect(mBackgroundRect, mBackgroundPaint);
+        }
+
+        void drawAnim(Canvas c, int[] pics, int topMargin) {
+        	c.drawBitmap(BitmapFactory.decodeResource(getResources(), pics[picIdx]), 0, topMargin, null);
         	++picIdx;
         	if (picIdx == FRONT_RES) picIdx = 0;
         }
@@ -236,12 +245,13 @@ public class Outrun extends WallpaperService {
 		private float mPosY;
 		private boolean takingACorner = false;
 		private Matrix mMatrix = new Matrix();
-		private static final int FRONT_RES = 3;
+		private static final int FRONT_RES = 2;
 		private static final int LEFT_RES = 5;
 		private static final int RIGHT_RES = 5;
-		private final Bitmap[] mFrontPics = new Bitmap[FRONT_RES];
-		private final Bitmap[] mRightPics = new Bitmap[RIGHT_RES];
-		private final Bitmap[] mLeftPics = new Bitmap[LEFT_RES];
+		private final int[] mFrontPicIds = new int[FRONT_RES];
+		private final int[] mRightPicIds = new int[RIGHT_RES];
+		private final int[] mLeftPicIds = new int[LEFT_RES];
+		private final int horizonId;
 
 		private final Runnable mDrawWallpaper = new Runnable() {
 		    public void run() {

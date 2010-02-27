@@ -1,0 +1,11 @@
+*/bin
+*/gen
+.classpath
+.project
+*.class
+*.dex
+*.apk
+.DS_Store
+*/**/*DSStore
+*/.settings
+*~

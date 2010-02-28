@@ -1,13 +1,10 @@
 package com.novoda.wallpaper;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.app.WallpaperManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,9 +19,18 @@ import android.view.SurfaceHolder;
 
 public class Outrun extends WallpaperService {
 
-    @Override
+	public static final int TIME_PERIOD_DAY = 84521;
+	public static final int TIME_PERIOD_SUNSET = 878651;
+	public static final int TIME_PERIOD_NIGHT = 35664;
+	
+	private final Handler mHandler = new Handler();
+	
+	WallpaperManager wallpaperMgr;
+	
+	@Override
     public void onCreate() {
     	super.onCreate();
+    	wallpaperMgr = WallpaperManager.getInstance(this);
     }
 
     @Override
@@ -39,19 +45,15 @@ public class Outrun extends WallpaperService {
     
     class OutRunEngine extends Engine {
 
+    	/*
+    	 * All IDs of resources needed for the animations
+    	 * are stored to cycle through in drawAnim().
+    	 * A picIndx is stored and iterated through.
+    	 * 
+    	 */
 		OutRunEngine() {
         	Resources res = getResources();
-        	Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
-        	cal.setTime(new Date(System.currentTimeMillis()));
-        	if ((cal.get(Calendar.HOUR_OF_DAY) >= 5  && cal.get(Calendar.HOUR_OF_DAY) <= 9) || (cal.get(Calendar.HOUR_OF_DAY) >= 18  && cal.get(Calendar.HOUR_OF_DAY) < 20)){
-        		currPeriodOfDay = SUNSET;
-        	}
-        	if (cal.get(Calendar.HOUR_OF_DAY) >= 6  && cal.get(Calendar.HOUR_OF_DAY) <= 9){
-        		currPeriodOfDay = DAY;
-        	}
-        	if (cal.get(Calendar.HOUR_OF_DAY) >= 20 || cal.get(Calendar.HOUR_OF_DAY) <= 6){
-        		currPeriodOfDay = NIGHT;
-        	}
+        	currSceneOfDay = Utils.currentPeriodOfDay();
         	
         	for (int i = 0; i< TOTAL_FRONT_RES; i++) {
         		mFrontPicIds[i] = res.getIdentifier("car_front_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
@@ -78,22 +80,10 @@ public class Outrun extends WallpaperService {
             super.onCreate(surfaceHolder);
             setTouchEventsEnabled(true);
             
-            Random rand = new Random();
-        	switch(currPeriodOfDay){
-		    	case DAY:
-		    		currBGIdx = rand.nextInt(TOTAL_DAY_RES);
-		    		break;
-		    	case SUNSET:
-		    		currBGIdx = rand.nextInt(TOTAL_SUNSET_RES);
-		    		break;
-		    	case NIGHT:
-		    		currBGIdx = rand.nextInt(TOTAL_NIGHT_RES);
-		    		break;
-        	}
+            currBGIdx = getNewBgInxForPeriod(currSceneOfDay);
         }
-        
 
-        @Override
+		@Override
         public void onDestroy() {
             super.onDestroy();
             mHandler.removeCallbacks(mDrawWallpaper);
@@ -102,9 +92,14 @@ public class Outrun extends WallpaperService {
         /*
          * Scene Background Timings
          * -------------------------
-         * Sunrise/Sunset: 6am-9am, 6pm-8pm 
-         * Day: 9am-6pm
-         * Night: 8pm-6am
+         * Sunrise: 5am-9am 
+         * Day: 9am-5pm
+         * Sunset: 5pm-7pm
+         * Night: 7pm-5am
+         * 
+         * Checks if it's time to change the scenery
+         * Bounds checking is incase there are different
+         * amount of BG resources for the period of day.
          * 
          */
         @Override
@@ -112,17 +107,11 @@ public class Outrun extends WallpaperService {
             mVisible = visible;
             
             if (visible) {
-            	Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
-            	cal.setTime(new Date(System.currentTimeMillis()));
-            	
-            	if ((cal.get(Calendar.HOUR_OF_DAY) >= 5  && cal.get(Calendar.HOUR_OF_DAY) <= 9) || (cal.get(Calendar.HOUR_OF_DAY) >= 18  && cal.get(Calendar.HOUR_OF_DAY) < 20)){
-            		currPeriodOfDay = SUNSET;
-            	}
-            	if (cal.get(Calendar.HOUR_OF_DAY) >= 6  && cal.get(Calendar.HOUR_OF_DAY) <= 9){
-            		currPeriodOfDay = DAY;
-            	}
-            	if (cal.get(Calendar.HOUR_OF_DAY) >= 20 || cal.get(Calendar.HOUR_OF_DAY) <= 6){
-            		currPeriodOfDay = NIGHT;
+            	int prevPeriodOfDay = currSceneOfDay;
+            	currSceneOfDay = Utils.currentPeriodOfDay();
+            	if(prevPeriodOfDay != currSceneOfDay){
+            		currBGIdx = getNewBgInxForPeriod(currSceneOfDay);
+            		refreshFullCanvas = true;
             	}
             	
             	drawFullFrame();
@@ -139,7 +128,9 @@ public class Outrun extends WallpaperService {
         }
 
         /*
-         * Store the position of the touch event so we can use it for drawing later
+         * Touch events check if a user has dragged their finger
+         * over the halfway vertical of the screen.
+         * 	
          */
         @Override
         public void onTouchEvent(MotionEvent event) {
@@ -154,27 +145,25 @@ public class Outrun extends WallpaperService {
             	boolean draggedLotsLeft = (event.getX() - mDragEventStartX) >=160;
             	Log.v(TAG, "X:["+event.getX()+"+] - dragStart["+mDragEventStartX+"] =" + (event.getX() - mDragEventStartX));
             	
-				if( (mDragEventStartX > 150) && draggedLotsRight ){
-            		takingACorner =true;
-            		currentDirection = DRIVING_RIGHT;
+            	if( (mDragEventStartX > 150) && draggedLotsRight ){
+            		currAnimDirection = DRIVING_RIGHT;
             		Log.d(TAG, "Driving animation started Right >");
             		new Timer().schedule(new TimerTask(){
 						@Override
 						public void run() {
 							picIdx =0;
-							takingACorner =false;
+							currAnimDirection = DRIVING_FORWARD;
 						}}, 1000);
             	}
             	
             	if( (mDragEventStartX < 150) && draggedLotsLeft ){
-            		takingACorner =true;
-            		currentDirection = DRIVING_LEFT;
+            		currAnimDirection = DRIVING_LEFT;
             		Log.d(TAG, "Driving animation started < Left");
             		new Timer().schedule(new TimerTask(){
 						@Override
 						public void run() {
 							picIdx =0;
-		            		takingACorner =false;
+							currAnimDirection = DRIVING_FORWARD;
 						}}, 1000);
             	}
             	
@@ -184,16 +173,33 @@ public class Outrun extends WallpaperService {
             super.onTouchEvent(event);
         }
 
-        
-        void drawFullFrame() {
-            final SurfaceHolder holder = getSurfaceHolder();
+        private int getNewBgInxForPeriod(int currPeriodOfDay) {
+			Random rand = new Random();
+			switch(currPeriodOfDay){
+		    	case TIME_PERIOD_DAY:
+		    		return rand.nextInt(TOTAL_DAY_RES);
+		    	case TIME_PERIOD_SUNSET:
+		    		return rand.nextInt(TOTAL_SUNSET_RES);
+		    	case TIME_PERIOD_NIGHT:
+		    		return rand.nextInt(TOTAL_NIGHT_RES);
+			}
+			
+			return 0;
+		}
+
+        /*
+         * Invalidates full canvas. 
+         */
+		void drawFullFrame() {
+			Log.i(TAG, "full draw");
+			final SurfaceHolder holder = getSurfaceHolder();
             Canvas c = null;
             try {
                 c = holder.lockCanvas();
                 if (c != null) {
                 	c.save();
                		drawHorizon(c);
-               		drawBottomFiller(c);                		
+               		drawBottomScreenPadding(c);                		
                 	drawCar(c);
                     c.restore();
                 }
@@ -208,10 +214,35 @@ public class Outrun extends WallpaperService {
             }
         }
 
-        private void drawCar(Canvas c) {
-    		
-        	if(takingACorner){
-        		if(currentDirection == DRIVING_RIGHT){
+        /*
+         * Invalidates car animation 
+         */
+		void drawPartFrame() {
+			final SurfaceHolder holder = getSurfaceHolder();
+			Canvas c = null;
+			try {
+				c = holder.lockCanvas(new Rect(0, 549, 480, 700));
+				if (c != null) {
+					c.save();
+               		drawHorizon(c);
+               		drawBottomScreenPadding(c);                		
+                	drawCar(c);
+					c.restore();
+				}
+			} finally {
+				if (c != null) holder.unlockCanvasAndPost(c);
+			}
+			
+			// Reschedule the next redraw
+			mHandler.removeCallbacks(mDrawWallpaper);
+			if (mVisible) {
+				mHandler.postDelayed(mDrawWallpaper, 1000 / 50);
+			}
+		}
+
+		private void drawCar(Canvas c) {
+        	if(currAnimDirection != DRIVING_FORWARD){
+        		if(currAnimDirection == DRIVING_RIGHT){
 	        		drawAnim(c, mRightPicIds, TOTAL_RIGHT_RES, 549);        			
         		}else{
 	        		drawAnim(c, mLeftPicIds, TOTAL_LEFT_RES, 549);
@@ -219,33 +250,22 @@ public class Outrun extends WallpaperService {
     		}else{
 	        	if(!mDragEventInProgress){
 	        		drawAnim(c, mFrontPicIds, TOTAL_FRONT_RES, 549);
-	        	}else{
-/*
- * Uncomment this to respond 
- * to all onscreen touch events 	        		
- *
- *	        		if(mDragEventStartX > 150){
- *	        			drawAnimRight(c, mLeftPics);
- *	        		}else{
- *						drawAnim(c, mLeftPics);
- *	        		}
- */	        	
 	        	}
     		}
 		}
         
         private void drawHorizon(Canvas c){
         	int resId=0, bgId=0;
-        	switch(currPeriodOfDay){
-        	case DAY:
+        	switch(currSceneOfDay){
+        	case TIME_PERIOD_DAY:
         		resId=mDayPicIds[currBGIdx];
         		bgId=mDayColourBGIds[currBGIdx];
         		break;
-        	case SUNSET:
+        	case TIME_PERIOD_SUNSET:
         		resId=mSunsetPicIds[currBGIdx];
         		bgId=mSunsetColourBGIds[currBGIdx];
         		break;
-        	case NIGHT:
+        	case TIME_PERIOD_NIGHT:
         		resId=mNightPicIds[currBGIdx];
         		bgId=mNightColourBGIds[currBGIdx];
         		break;
@@ -260,7 +280,8 @@ public class Outrun extends WallpaperService {
         	
         	c.drawBitmap(BitmapFactory.decodeResource(getResources(), resId), 0, 325, null);
         }
-        private void drawBottomFiller(Canvas c){
+        
+        private void drawBottomScreenPadding(Canvas c){
         	Paint mBackgroundPaint = new Paint();
         	mBackgroundPaint.setStyle(Paint.Style.FILL);
         	Rect mBackgroundRect = new Rect();
@@ -269,38 +290,66 @@ public class Outrun extends WallpaperService {
         	c.drawRect(mBackgroundRect, mBackgroundPaint);
         }
         
-        
+        /*
+         * Generic animation renderer
+         * Rolls over on bounds of array.
+         */
         void drawAnim(Canvas c, int[] pics, int totalRes, int topMargin) {
         	Bitmap decodeResource = BitmapFactory.decodeResource(getResources(), pics[picIdx++]);
 			c.drawBitmap(decodeResource, 0, topMargin, null);
         	if (picIdx == totalRes) picIdx = 0;
         }
+        
+        private final Runnable mDrawWallpaper = new Runnable() {
+        	public void run() {
+        		if(refreshFullCanvas==false){
+        			drawPartFrame();
+        		}else{
+        			refreshFullCanvas=false;
+        			drawFullFrame();
+        		}
+        	}
+        };
 
+        //Only one animation plays at a time and this represents the index.
         private int picIdx = 0;
-		private final Paint mPaint = new Paint();
-		private float mTouchX = -1;
-		private float mTouchY = -1;
-		private int currentDirection = DRIVING_FORWARD;
+
+        //Signal animation change needed
+        private int currAnimDirection = DRIVING_FORWARD;
+        private int currSceneOfDay = TIME_PERIOD_SUNSET;
+
+        private float mDragEventStartX = 0;
+        private boolean mDragEventInProgress = false;
+        
+    	private int currBGIdx = 0;
+
+    	/*
+    	 * When the wallpaper goes out of view
+    	 * stop animations 
+    	 */
+        private boolean mVisible;
+        
+		private boolean refreshFullCanvas = false;
+
+        //Resource bounds checking helpers
+        private static final int TOTAL_FRONT_RES = 2;
+        private static final int TOTAL_LEFT_RES = 5;
+        private static final int TOTAL_RIGHT_RES = 5;
+        private static final int TOTAL_DAY_RES = 12;
+        private static final int TOTAL_NIGHT_RES = 8;
+        private static final int TOTAL_SUNSET_RES = 9;
+
 		private static final int DRIVING_FORWARD = 5678;
 		private static final int DRIVING_LEFT = 9876;
 		private static final int DRIVING_RIGHT = 234;
-		private boolean mDragEventInProgress = false;
-		private float mDragEventStartX = 0;
-		private boolean mVisible;
-		private float mPosY;
-		private boolean takingACorner = false;
-		private static final int TOTAL_FRONT_RES = 2;
-		private static final int TOTAL_LEFT_RES = 5;
-		private static final int TOTAL_RIGHT_RES = 5;
-		private static final int TOTAL_DAY_RES = 12;
-		private static final int TOTAL_NIGHT_RES = 8;
-		private static final int TOTAL_SUNSET_RES = 9;
+		
 		private final int[] mFrontPicIds = new int[TOTAL_FRONT_RES];
 		private final int[] mRightPicIds = new int[TOTAL_RIGHT_RES];
 		private final int[] mLeftPicIds = new int[TOTAL_LEFT_RES];
 		private final int[] mSunsetPicIds = new int[TOTAL_SUNSET_RES];
 		private final int[] mNightPicIds = new int[TOTAL_NIGHT_RES];
 		private final int[] mDayPicIds = new int[TOTAL_DAY_RES];
+		
 		private Integer[] mDayColourBGIds = {
 				R.color.bg_day000, R.color.bg_day001,
 				R.color.bg_day002, R.color.bg_day003,
@@ -322,19 +371,7 @@ public class Outrun extends WallpaperService {
 				R.color.bg_sunset006, R.color.bg_sunset007,
 				R.color.bg_sunset008
 		};
-    	private final int DAY = 84521;
-    	private final int SUNSET = 878651;
-    	private final int NIGHT = 35664;
-    	private int currPeriodOfDay = SUNSET;
-    	private int currBGIdx = 0;
-		private static final String TAG = "OutRun";
-		
-		private final Runnable mDrawWallpaper = new Runnable() {
-		    public void run() {
-		    	drawFullFrame();
-		    }
-		};
-    }
 
-	private final Handler mHandler = new Handler();
+		private static final String TAG = "OutRun";
+    }
 }

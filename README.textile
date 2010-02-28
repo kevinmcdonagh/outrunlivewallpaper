@@ -1,6 +1,7 @@
 h1. OutRun Live Wallpaper for Nexus One
 
 !http://github.com/downloads/kevinmcdonagh/outrunlivewallpaper/outrundl_qrcode.png!
+* "Latest APK v1.0 (Nexus One only)":http://github.com/downloads/kevinmcdonagh/outrunlivewallpaper/OutrunWallpaper.apk
 
 This is a Live Wallpaper for Android featuring the arcade classic OutRun. 
 You can navigate left&right across your dashboard and scenery changes depending on the time of Day/Night/ & Sunrise/Sunset.

@@ -1,12 +1,17 @@
-h1. OurRun LiveWallpaper for Nexus One
+h1. OutRun Live Wallpaper for Nexus One
 
 !http://github.com/downloads/kevinmcdonagh/outrunlivewallpaper/outrundl_qrcode.png!
 
-This is a LiveWallpaper for Android featuring the arcade classic OutRun. Scenery changes depending on Day/Night/ & Sunrise/Sunset.
-
+This is a Live Wallpaper for Android featuring the arcade classic OutRun. 
+You can navigate left&right across your dashboard and scenery changes depending on the time of Day/Night/ & Sunrise/Sunset.
+All of the current scenes are taken from OutRun2019(Copyright of Sega).
 
 h2. Scene Background Timings
 
-* Sunrise/Sunset: 6am-9am, 6pm-8pm 
-* Day: 9am-6pm
-* Night: 8pm-6am
+* Sunrise: 5am-9am 
+* Day: 9am-5pm
+* Sunset: 5pm-7pm
+* Night: 7pm-5am
+
+OutRun2019(Copyright of Sega)
+!http://en.wikipedia.org/wiki/Out_Run_2019!

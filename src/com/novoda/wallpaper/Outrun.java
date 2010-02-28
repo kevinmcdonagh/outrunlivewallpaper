@@ -1,29 +1,19 @@
-/*
- * Copyright (C) 2009 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.novoda.wallpaper;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Random;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.app.Service;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -52,19 +42,39 @@ public class Outrun extends WallpaperService {
     
     class OutRunEngine extends Engine {
 
-    	OutRunEngine() {
+		OutRunEngine() {
         	Resources res = getResources();
+        	horizonId = res.getIdentifier("horiz_sunset000", "drawable", "com.novoda.wallpaper");
         	
-        	horizonId = res.getIdentifier("horiz000", "drawable", "com.novoda.wallpaper");
+        	Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+        	cal.setTime(new Date(System.currentTimeMillis()));
+        	if ((cal.get(Calendar.HOUR_OF_DAY) >= 5  && cal.get(Calendar.HOUR_OF_DAY) <= 9) || (cal.get(Calendar.HOUR_OF_DAY) >= 18  && cal.get(Calendar.HOUR_OF_DAY) < 20)){
+        		currPeriodOfDay = SUNSET;
+        	}
+        	if (cal.get(Calendar.HOUR_OF_DAY) >= 6  && cal.get(Calendar.HOUR_OF_DAY) <= 9){
+        		currPeriodOfDay = DAY;
+        	}
+        	if (cal.get(Calendar.HOUR_OF_DAY) >= 20 || cal.get(Calendar.HOUR_OF_DAY) <= 6){
+        		currPeriodOfDay = NIGHT;
+        	}
         	
-        	for (int i = 0; i< FRONT_RES; i++) {
-        		mFrontPicIds[i] = res.getIdentifier("car_front_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
+        	for (int i = 0; i< TOTAL_FRONT_RES; i++) {
+        		mFrontPicIds[i] = res.getIdentifier("car_front_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
         	}
-        	for (int i = 0; i< LEFT_RES; i++) {
-        		mLeftPicIds[i] = res.getIdentifier("left_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
+        	for (int i = 0; i< TOTAL_LEFT_RES; i++) {
+        		mLeftPicIds[i] = res.getIdentifier("car_left_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
         	}
-        	for (int i = 0; i< RIGHT_RES; i++) {
-        		mRightPicIds[i] = res.getIdentifier("right_day00" + (i + 1), "drawable", "com.novoda.wallpaper");
+        	for (int i = 0; i< TOTAL_RIGHT_RES; i++) {
+        		mRightPicIds[i] = res.getIdentifier("car_right_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+        	}
+        	for (int i = 0; i< TOTAL_DAY_RES; i++) {
+        		mDayPicIds[i] = res.getIdentifier("horiz_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+        	}
+        	for (int i = 0; i< TOTAL_SUNSET_RES; i++) {
+        		mSunsetPicIds[i] = res.getIdentifier("horiz_sunset" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+        	}
+        	for (int i = 0; i< TOTAL_NIGHT_RES; i++) {
+        		mNightPicIds[i] = res.getIdentifier("horiz_night" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
         	}
         }
         
@@ -72,7 +82,21 @@ public class Outrun extends WallpaperService {
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
             setTouchEventsEnabled(true);
+            
+            Random rand = new Random();
+        	switch(currPeriodOfDay){
+		    	case DAY:
+		    		currBGIdx = rand.nextInt(TOTAL_DAY_RES);
+		    		break;
+		    	case SUNSET:
+		    		currBGIdx = rand.nextInt(TOTAL_SUNSET_RES);
+		    		break;
+		    	case NIGHT:
+		    		currBGIdx = rand.nextInt(TOTAL_NIGHT_RES);
+		    		break;
+        	}
         }
+        
 
         @Override
         public void onDestroy() {
@@ -84,21 +108,28 @@ public class Outrun extends WallpaperService {
         public void onVisibilityChanged(boolean visible) {
             mVisible = visible;
             if (visible) {
-                drawFrame();
+            	Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+            	cal.setTime(new Date(System.currentTimeMillis()));
+            	
+//            	6-9 - sunset
+//            	18-20 - sunset
+//            	9-18 - day
+//            	20-6 - night
+            	
+            	if ((cal.get(Calendar.HOUR_OF_DAY) >= 5  && cal.get(Calendar.HOUR_OF_DAY) <= 9) || (cal.get(Calendar.HOUR_OF_DAY) >= 18  && cal.get(Calendar.HOUR_OF_DAY) < 20)){
+            		currPeriodOfDay = SUNSET;
+            	}
+            	if (cal.get(Calendar.HOUR_OF_DAY) >= 6  && cal.get(Calendar.HOUR_OF_DAY) <= 9){
+            		currPeriodOfDay = DAY;
+            	}
+            	if (cal.get(Calendar.HOUR_OF_DAY) >= 20 || cal.get(Calendar.HOUR_OF_DAY) <= 6){
+            		currPeriodOfDay = NIGHT;
+            	}
+            	
+            	drawFullFrame();
             } else {
                 mHandler.removeCallbacks(mDrawWallpaper);
             }
-        }
-
-        @Override
-        public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            super.onSurfaceChanged(holder, format, width, height);
-            drawFrame();
-        }
-
-        @Override
-        public void onSurfaceCreated(SurfaceHolder holder) {
-            super.onSurfaceCreated(holder);
         }
 
         @Override
@@ -106,12 +137,6 @@ public class Outrun extends WallpaperService {
             super.onSurfaceDestroyed(holder);
             mVisible = false;
             mHandler.removeCallbacks(mDrawWallpaper);
-        }
-
-        @Override
-        public void onOffsetsChanged(float xOffset, float yOffset, float xStep, float yStep, int xPixels, int yPixels) {
-//        	Log.i(TAG, "XOffset["+xOffset+"] xStep["+xStep+"] xPixels["+xPixels+"]");
-            drawFrame();
         }
 
         /*
@@ -161,14 +186,15 @@ public class Outrun extends WallpaperService {
         }
 
         
-        void drawFrame() {
+        void drawFullFrame() {
             final SurfaceHolder holder = getSurfaceHolder();
             Canvas c = null;
             try {
                 c = holder.lockCanvas();
                 if (c != null) {
                 	c.save();
-                	drawHorizon(c);
+               		drawHorizon(c);
+               		drawBottomFiller(c);                		
                 	drawCar(c);
                     c.restore();
                 }
@@ -187,13 +213,13 @@ public class Outrun extends WallpaperService {
     		
         	if(takingACorner){
         		if(currentDirection == DRIVING_RIGHT){
-	        		drawAnim(c, mRightPicIds, 549);        			
+	        		drawAnim(c, mRightPicIds, TOTAL_RIGHT_RES, 549);        			
         		}else{
-	        		drawAnim(c, mLeftPicIds, 549);
+	        		drawAnim(c, mLeftPicIds, TOTAL_LEFT_RES, 549);
         		}
     		}else{
 	        	if(!mDragEventInProgress){
-	        		drawAnim(c, mFrontPicIds, 549);
+	        		drawAnim(c, mFrontPicIds, TOTAL_FRONT_RES, 549);
 	        	}else{
 /*
  * Uncomment this to respond 
@@ -210,25 +236,45 @@ public class Outrun extends WallpaperService {
 		}
         
         private void drawHorizon(Canvas c){
+        	int resId=0, bgId=0;
+        	switch(currPeriodOfDay){
+        	case DAY:
+        		resId=mDayPicIds[currBGIdx];
+        		bgId=mDayColourBGIds[currBGIdx];
+        		break;
+        	case SUNSET:
+        		resId=mSunsetPicIds[currBGIdx];
+        		bgId=mSunsetColourBGIds[currBGIdx];
+        		break;
+        	case NIGHT:
+        		resId=mNightPicIds[currBGIdx];
+        		bgId=mNightColourBGIds[currBGIdx];
+        		break;
+        	}
         	
         	Paint mBackgroundPaint = new Paint();
-        	mBackgroundPaint.setColor(getResources().getColor(R.color.horiz_000));
+        	mBackgroundPaint.setColor(getResources().getColor(bgId));
         	mBackgroundPaint.setStyle(Paint.Style.FILL);
         	Rect mBackgroundRect = new Rect();
         	mBackgroundRect.set(0, 0, 480, 325);
         	c.drawRect(mBackgroundRect, mBackgroundPaint);
         	
-        	c.drawBitmap(BitmapFactory.decodeResource(getResources(), horizonId), 0, 325, null);
-
+        	c.drawBitmap(BitmapFactory.decodeResource(getResources(), resId), 0, 325, null);
+        }
+        private void drawBottomFiller(Canvas c){
+        	Paint mBackgroundPaint = new Paint();
+        	mBackgroundPaint.setStyle(Paint.Style.FILL);
+        	Rect mBackgroundRect = new Rect();
         	mBackgroundPaint.setColor(getResources().getColor(R.color.ROAD));
         	mBackgroundRect.set(0, 685, 480, 800);
         	c.drawRect(mBackgroundRect, mBackgroundPaint);
         }
+        
 
-        void drawAnim(Canvas c, int[] pics, int topMargin) {
-        	c.drawBitmap(BitmapFactory.decodeResource(getResources(), pics[picIdx]), 0, topMargin, null);
-        	++picIdx;
-        	if (picIdx == FRONT_RES) picIdx = 0;
+        void drawAnim(Canvas c, int[] pics, int totalRes, int topMargin) {
+        	Bitmap decodeResource = BitmapFactory.decodeResource(getResources(), pics[picIdx++]);
+			c.drawBitmap(decodeResource, 0, topMargin, null);
+        	if (picIdx == totalRes) picIdx = 0;
         }
 
         private int picIdx = 0;
@@ -244,18 +290,51 @@ public class Outrun extends WallpaperService {
 		private boolean mVisible;
 		private float mPosY;
 		private boolean takingACorner = false;
-		private Matrix mMatrix = new Matrix();
-		private static final int FRONT_RES = 2;
-		private static final int LEFT_RES = 5;
-		private static final int RIGHT_RES = 5;
-		private final int[] mFrontPicIds = new int[FRONT_RES];
-		private final int[] mRightPicIds = new int[RIGHT_RES];
-		private final int[] mLeftPicIds = new int[LEFT_RES];
-		private final int horizonId;
-
+		private static final int TOTAL_FRONT_RES = 2;
+		private static final int TOTAL_LEFT_RES = 5;
+		private static final int TOTAL_RIGHT_RES = 5;
+		private static final int TOTAL_DAY_RES = 12;
+		private static final int TOTAL_NIGHT_RES = 8;
+		private static final int TOTAL_SUNSET_RES = 9;
+		private final int[] mFrontPicIds = new int[TOTAL_FRONT_RES];
+		private final int[] mRightPicIds = new int[TOTAL_RIGHT_RES];
+		private final int[] mLeftPicIds = new int[TOTAL_LEFT_RES];
+		private final int[] mSunsetPicIds = new int[TOTAL_SUNSET_RES];
+		private final int[] mNightPicIds = new int[TOTAL_NIGHT_RES];
+		private final int[] mDayPicIds = new int[TOTAL_DAY_RES];
+		private Integer[] mDayColourBGIds = {
+				R.color.bg_day000, R.color.bg_day001,
+				R.color.bg_day002, R.color.bg_day003,
+				R.color.bg_day004, R.color.bg_day005,
+				R.color.bg_day006, R.color.bg_day007,
+				R.color.bg_day008, R.color.bg_day009,
+				R.color.bg_day010, R.color.bg_day011
+				};
+		private final int[] mNightColourBGIds = {
+				R.color.bg_night000, R.color.bg_night001,
+				R.color.bg_night002, R.color.bg_night003,
+				R.color.bg_night004, R.color.bg_night005,
+				R.color.bg_night006, R.color.bg_night007
+		};
+		private final int[] mSunsetColourBGIds = {
+				R.color.bg_sunset000, R.color.bg_sunset001,
+				R.color.bg_sunset002, R.color.bg_sunset003,
+				R.color.bg_sunset004, R.color.bg_sunset005,
+				R.color.bg_sunset006, R.color.bg_sunset007,
+				R.color.bg_sunset008
+		};
+		private int currPicIndx = 0;
+    	private final int DAY = 84521;
+    	private final int SUNSET = 878651;
+    	private final int NIGHT = 35664;
+    	private int currPeriodOfDay = SUNSET;
+    	private int currBGIdx = 0;
+		private int horizonId;
+		private static final String TAG = "OutRun";
+		
 		private final Runnable mDrawWallpaper = new Runnable() {
 		    public void run() {
-		        drawFrame();
+		    	drawFullFrame();
 		    }
 		};
     }

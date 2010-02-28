@@ -1,4 +1,35 @@
 <resources>
     <color name="horiz_000">#AB8CFF</color>
     <color name="ROAD">#B5B5B5</color>
+	<color name="bg_day000">#ab8cff</color>
+	<color name="bg_day001">#60a0e0</color>
+	<color name="bg_day002">#c0c0c0</color>
+	<color name="bg_day003">#60a0a0</color>
+	<color name="bg_day004">#40c0c0</color>
+	<color name="bg_day005">#60a0c0</color>
+	<color name="bg_day006">#60a0c0</color>
+	<color name="bg_day007">#80a0a0</color>
+	<color name="bg_day008">#4060a0</color>
+	<color name="bg_day009">#60c0c0</color>
+	<color name="bg_day010">#80a0c0</color>
+	<color name="bg_day011">#4060a0</color>
+
+	<color name="bg_night000">#000000</color>
+	<color name="bg_night001">#002000</color>
+	<color name="bg_night002">#002020</color>
+	<color name="bg_night003">#206080</color>
+	<color name="bg_night004">#204060</color>
+	<color name="bg_night005">#000000</color>
+	<color name="bg_night006">#402040</color>
+	<color name="bg_night007">#406060</color>
+
+	<color name="bg_sunset000">#60a0c0</color>
+	<color name="bg_sunset001">#20a0a0</color>
+	<color name="bg_sunset002">#80a0a0</color>
+	<color name="bg_sunset003">#c0a040</color>
+	<color name="bg_sunset004">#a06060</color>
+	<color name="bg_sunset005">#60c0c0</color>
+	<color name="bg_sunset006">#a06060</color>
+	<color name="bg_sunset007">#a0a040</color>
+	<color name="bg_sunset008">#4060a0</color>
 </resources>

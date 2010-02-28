@@ -1,6 +1,5 @@
 package com.novoda.wallpaper;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -9,12 +8,10 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import android.app.Service;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Handler;
@@ -44,8 +41,6 @@ public class Outrun extends WallpaperService {
 
 		OutRunEngine() {
         	Resources res = getResources();
-        	horizonId = res.getIdentifier("horiz_sunset000", "drawable", "com.novoda.wallpaper");
-        	
         	Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
         	cal.setTime(new Date(System.currentTimeMillis()));
         	if ((cal.get(Calendar.HOUR_OF_DAY) >= 5  && cal.get(Calendar.HOUR_OF_DAY) <= 9) || (cal.get(Calendar.HOUR_OF_DAY) >= 18  && cal.get(Calendar.HOUR_OF_DAY) < 20)){
@@ -104,17 +99,21 @@ public class Outrun extends WallpaperService {
             mHandler.removeCallbacks(mDrawWallpaper);
         }
 
+        /*
+         * Scene Background Timings
+         * -------------------------
+         * Sunrise/Sunset: 6am-9am, 6pm-8pm 
+         * Day: 9am-6pm
+         * Night: 8pm-6am
+         * 
+         */
         @Override
         public void onVisibilityChanged(boolean visible) {
             mVisible = visible;
+            
             if (visible) {
             	Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
             	cal.setTime(new Date(System.currentTimeMillis()));
-            	
-//            	6-9 - sunset
-//            	18-20 - sunset
-//            	9-18 - day
-//            	20-6 - night
             	
             	if ((cal.get(Calendar.HOUR_OF_DAY) >= 5  && cal.get(Calendar.HOUR_OF_DAY) <= 9) || (cal.get(Calendar.HOUR_OF_DAY) >= 18  && cal.get(Calendar.HOUR_OF_DAY) < 20)){
             		currPeriodOfDay = SUNSET;
@@ -270,7 +269,7 @@ public class Outrun extends WallpaperService {
         	c.drawRect(mBackgroundRect, mBackgroundPaint);
         }
         
-
+        
         void drawAnim(Canvas c, int[] pics, int totalRes, int topMargin) {
         	Bitmap decodeResource = BitmapFactory.decodeResource(getResources(), pics[picIdx++]);
 			c.drawBitmap(decodeResource, 0, topMargin, null);
@@ -323,13 +322,11 @@ public class Outrun extends WallpaperService {
 				R.color.bg_sunset006, R.color.bg_sunset007,
 				R.color.bg_sunset008
 		};
-		private int currPicIndx = 0;
     	private final int DAY = 84521;
     	private final int SUNSET = 878651;
     	private final int NIGHT = 35664;
     	private int currPeriodOfDay = SUNSET;
     	private int currBGIdx = 0;
-		private int horizonId;
 		private static final String TAG = "OutRun";
 		
 		private final Runnable mDrawWallpaper = new Runnable() {
@@ -340,5 +337,4 @@ public class Outrun extends WallpaperService {
     }
 
 	private final Handler mHandler = new Handler();
-	private static final String TAG = Outrun.class.getSimpleName();
 }

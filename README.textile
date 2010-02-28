@@ -14,4 +14,4 @@ h2. Scene Background Timings
 * Night: 7pm-5am
 
 OutRun2019(Copyright of Sega)
-!http://en.wikipedia.org/wiki/Out_Run_2019!
+* "OutRun 2019 on wikipedia":http://en.wikipedia.org/wiki/Out_Run_2019

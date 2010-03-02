@@ -107,13 +107,8 @@ public class Outrun extends WallpaperService {
             mVisible = visible;
             
             if (visible) {
-            	int prevPeriodOfDay = currSceneOfDay;
             	currSceneOfDay = Utils.currentPeriodOfDay();
-            	if(prevPeriodOfDay != currSceneOfDay){
-            		currBGIdx = getNewBgInxForPeriod(currSceneOfDay);
-            		refreshFullCanvas = true;
-            	}
-            	
+            	currBGIdx = getNewBgInxForPeriod(currSceneOfDay);
             	drawFullFrame();
             } else {
                 mHandler.removeCallbacks(mDrawWallpaper);
@@ -191,7 +186,6 @@ public class Outrun extends WallpaperService {
          * Invalidates full canvas. 
          */
 		void drawFullFrame() {
-			Log.i(TAG, "full draw");
 			final SurfaceHolder holder = getSurfaceHolder();
             Canvas c = null;
             try {
@@ -217,7 +211,7 @@ public class Outrun extends WallpaperService {
         /*
          * Invalidates car animation 
          */
-		void drawPartFrame() {
+		void drawCarAndRoad() {
 			final SurfaceHolder holder = getSurfaceHolder();
 			Canvas c = null;
 			try {
@@ -302,12 +296,7 @@ public class Outrun extends WallpaperService {
         
         private final Runnable mDrawWallpaper = new Runnable() {
         	public void run() {
-        		if(refreshFullCanvas==false){
-        			drawPartFrame();
-        		}else{
-        			refreshFullCanvas=false;
-        			drawFullFrame();
-        		}
+        			drawCarAndRoad();
         	}
         };
 
@@ -329,8 +318,6 @@ public class Outrun extends WallpaperService {
     	 */
         private boolean mVisible;
         
-		private boolean refreshFullCanvas = false;
-
         //Resource bounds checking helpers
         private static final int TOTAL_FRONT_RES = 2;
         private static final int TOTAL_LEFT_RES = 5;

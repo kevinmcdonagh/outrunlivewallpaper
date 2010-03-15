@@ -45,42 +45,51 @@ public class Outrun extends WallpaperService {
     
     class OutRunEngine extends Engine {
 
-    	/*
-    	 * All IDs of resources needed for the animations
-    	 * are stored to cycle through in drawAnim().
-    	 * A picIndx is stored and iterated through.
-    	 * 
-    	 */
-		OutRunEngine() {
+		private void loadImagesIntoMemory(String imgPrefix, int max, Bitmap[] array) {
         	Resources res = getResources();
-        	currSceneOfDay = Utils.currentPeriodOfDay();
-        	
-        	for (int i = 0; i< TOTAL_FRONT_RES; i++) {
-        		mFrontPicIds[i] = res.getIdentifier("car_front_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+			for (int i = 0; i< max; i++) {
+				int id = res.getIdentifier(imgPrefix + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+				array[i] = BitmapFactory.decodeResource(res, id);
         	}
-        	for (int i = 0; i< TOTAL_LEFT_RES; i++) {
-        		mLeftPicIds[i] = res.getIdentifier("car_left_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
-        	}
-        	for (int i = 0; i< TOTAL_RIGHT_RES; i++) {
-        		mRightPicIds[i] = res.getIdentifier("car_right_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
-        	}
-        	for (int i = 0; i< TOTAL_DAY_RES; i++) {
-        		mDayPicIds[i] = res.getIdentifier("horiz_day" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
-        	}
-        	for (int i = 0; i< TOTAL_SUNSET_RES; i++) {
-        		mSunsetPicIds[i] = res.getIdentifier("horiz_sunset" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
-        	}
-        	for (int i = 0; i< TOTAL_NIGHT_RES; i++) {
-        		mNightPicIds[i] = res.getIdentifier("horiz_night" + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
-        	}
-        }
+		}
+		private void loadImageIDsIntoMemory(String imgPrefix, int max, int[] array) {
+			Resources res = getResources();
+			for (int i = 0; i< max; i++) {
+				array[i] = res.getIdentifier(imgPrefix + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+			}
+		}
         
+		/*
+		 * All IDs of resources needed for the animations
+		 * are stored to cycle through in drawAnim().
+		 * A picIndx is stored and iterated through.
+		 * 
+		 */
         @Override
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
             setTouchEventsEnabled(true);
             
-            currBGIdx = getNewBgInxForPeriod(currSceneOfDay);
+            loadImagesIntoMemory("car_front_day", TOTAL_FRONT_RES, mFrontPics);
+            loadImageIDsIntoMemory("car_left_day", TOTAL_LEFT_RES, mLeftPicIds);
+            loadImageIDsIntoMemory("car_right_day", TOTAL_RIGHT_RES, mRightPicIds);
+            loadImageIDsIntoMemory("horiz_day", TOTAL_DAY_RES, mDayPicIds);
+            loadImageIDsIntoMemory("horiz_sunset", TOTAL_SUNSET_RES, mSunsetPicIds);
+            loadImageIDsIntoMemory("horiz_night", TOTAL_NIGHT_RES, mNightPicIds);
+            currSceneOfDay = Utils.currentPeriodOfDay();
+            currSceneBGIdx = getNewBgInxForPeriod(currSceneOfDay);
+            
+        	mPaintSky = new Paint();
+        	mPaintSky.setStyle(Paint.Style.FILL);
+        	mRectSky = new Rect();
+        	mRectSky.set(0, 0, 480, 325);
+        	mPaintRoad = new Paint();
+        	mPaintRoad.setStyle(Paint.Style.FILL);
+        	mPaintRoad.setColor(getResources().getColor(R.color.ROAD));
+        	mRectRoad = new Rect();
+        	mRectRoad.set(0, 685, 480, 800);
+
+
         }
 
 		@Override
@@ -108,7 +117,7 @@ public class Outrun extends WallpaperService {
             
             if (visible) {
             	currSceneOfDay = Utils.currentPeriodOfDay();
-            	currBGIdx = getNewBgInxForPeriod(currSceneOfDay);
+            	currSceneBGIdx = getNewBgInxForPeriod(currSceneOfDay);
             	drawFullFrame();
             } else {
                 mHandler.removeCallbacks(mDrawWallpaper);
@@ -193,8 +202,8 @@ public class Outrun extends WallpaperService {
                 if (c != null) {
                 	c.save();
                		drawHorizon(c);
-               		drawBottomScreenPadding(c);                		
                 	drawCar(c);
+                	c.drawRect(mRectRoad, mPaintRoad);
                     c.restore();
                 }
             } finally {
@@ -219,8 +228,8 @@ public class Outrun extends WallpaperService {
 				if (c != null) {
 					c.save();
                		drawHorizon(c);
-               		drawBottomScreenPadding(c);                		
                 	drawCar(c);
+                	c.drawRect(mRectRoad, mPaintRoad);
 					c.restore();
 				}
 			} finally {
@@ -243,7 +252,7 @@ public class Outrun extends WallpaperService {
         		}
     		}else{
 	        	if(!mDragEventInProgress){
-	        		drawAnim(c, mFrontPicIds, TOTAL_FRONT_RES, 549);
+	        		drawFrontAnim(c, mFrontPics, TOTAL_FRONT_RES, 549);
 	        	}
     		}
 		}
@@ -251,37 +260,31 @@ public class Outrun extends WallpaperService {
         private void drawHorizon(Canvas c){
         	int resId=0, bgId=0;
         	switch(currSceneOfDay){
-        	case TIME_PERIOD_DAY:
-        		resId=mDayPicIds[currBGIdx];
-        		bgId=mDayColourBGIds[currBGIdx];
-        		break;
-        	case TIME_PERIOD_SUNSET:
-        		resId=mSunsetPicIds[currBGIdx];
-        		bgId=mSunsetColourBGIds[currBGIdx];
-        		break;
-        	case TIME_PERIOD_NIGHT:
-        		resId=mNightPicIds[currBGIdx];
-        		bgId=mNightColourBGIds[currBGIdx];
-        		break;
+	        	case TIME_PERIOD_DAY:
+	        		resId=mDayPicIds[currSceneBGIdx];
+	        		bgId=mDayColourBGIds[currSceneBGIdx];
+	        		break;
+	        	case TIME_PERIOD_SUNSET:
+	        		resId=mSunsetPicIds[currSceneBGIdx];
+	        		bgId=mSunsetColourBGIds[currSceneBGIdx];
+	        		break;
+	        	case TIME_PERIOD_NIGHT:
+	        		resId=mNightPicIds[currSceneBGIdx];
+	        		bgId=mNightColourBGIds[currSceneBGIdx];
+	        		break;
         	}
         	
-        	Paint mBackgroundPaint = new Paint();
-        	mBackgroundPaint.setColor(getResources().getColor(bgId));
-        	mBackgroundPaint.setStyle(Paint.Style.FILL);
-        	Rect mBackgroundRect = new Rect();
-        	mBackgroundRect.set(0, 0, 480, 325);
-        	c.drawRect(mBackgroundRect, mBackgroundPaint);
+        	mPaintSky.setColor(getResources().getColor(bgId));
+        	c.drawRect(mRectSky, mPaintSky);
         	
-        	c.drawBitmap(BitmapFactory.decodeResource(getResources(), resId), 0, 325, null);
-        }
-        
-        private void drawBottomScreenPadding(Canvas c){
-        	Paint mBackgroundPaint = new Paint();
-        	mBackgroundPaint.setStyle(Paint.Style.FILL);
-        	Rect mBackgroundRect = new Rect();
-        	mBackgroundPaint.setColor(getResources().getColor(R.color.ROAD));
-        	mBackgroundRect.set(0, 685, 480, 800);
-        	c.drawRect(mBackgroundRect, mBackgroundPaint);
+        	if(currSceneOfDay != currBGCacheTimePeriod || currSceneBGIdx != currSceneCacheBGIdx){
+        		currSceneCacheBGIdx = currSceneBGIdx;
+        		currBGCacheTimePeriod = currSceneOfDay;
+        		currSceneBGCache = BitmapFactory.decodeResource(getResources(), resId);
+        		c.drawBitmap(currSceneBGCache, 0, 325, null);
+        	}else{
+        		c.drawBitmap(currSceneBGCache, 0, 325, null);
+        	}
         }
         
         /*
@@ -291,6 +294,11 @@ public class Outrun extends WallpaperService {
         void drawAnim(Canvas c, int[] pics, int totalRes, int topMargin) {
         	Bitmap decodeResource = BitmapFactory.decodeResource(getResources(), pics[picIdx++]);
 			c.drawBitmap(decodeResource, 0, topMargin, null);
+        	if (picIdx == totalRes) picIdx = 0;
+        }
+        
+        void drawFrontAnim(Canvas c, Bitmap[] pics, int totalRes, int topMargin) {
+        	c.drawBitmap(pics[picIdx++], 0, topMargin, null);
         	if (picIdx == totalRes) picIdx = 0;
         }
         
@@ -310,7 +318,10 @@ public class Outrun extends WallpaperService {
         private float mDragEventStartX = 0;
         private boolean mDragEventInProgress = false;
         
-    	private int currBGIdx = 0;
+    	private int currSceneBGIdx = 0;
+    	private int currSceneCacheBGIdx = 0;
+    	private Bitmap currSceneBGCache;
+    	private int currBGCacheTimePeriod = 0;
 
     	/*
     	 * When the wallpaper goes out of view
@@ -330,7 +341,7 @@ public class Outrun extends WallpaperService {
 		private static final int DRIVING_LEFT = 9876;
 		private static final int DRIVING_RIGHT = 234;
 		
-		private final int[] mFrontPicIds = new int[TOTAL_FRONT_RES];
+		private final Bitmap[] mFrontPics = new Bitmap[TOTAL_FRONT_RES];
 		private final int[] mRightPicIds = new int[TOTAL_RIGHT_RES];
 		private final int[] mLeftPicIds = new int[TOTAL_LEFT_RES];
 		private final int[] mSunsetPicIds = new int[TOTAL_SUNSET_RES];
@@ -360,5 +371,13 @@ public class Outrun extends WallpaperService {
 		};
 
 		private static final String TAG = "OutRun";
+
+		private Paint mPaintSky;
+
+		private Rect mRectSky;
+
+		private Paint mPaintRoad;
+
+		private Rect mRectRoad;
     }
 }

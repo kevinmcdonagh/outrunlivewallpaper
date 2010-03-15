@@ -25,12 +25,9 @@ public class Outrun extends WallpaperService {
 	
 	private final Handler mHandler = new Handler();
 	
-	WallpaperManager wallpaperMgr;
-	
 	@Override
     public void onCreate() {
     	super.onCreate();
-    	wallpaperMgr = WallpaperManager.getInstance(this);
     }
 
     @Override
@@ -128,18 +125,25 @@ public class Outrun extends WallpaperService {
          */
         @Override
         public void onTouchEvent(MotionEvent event) {
-        	
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            float mouseUpX = event.getX();
+            
+			if (event.getAction() == MotionEvent.ACTION_DOWN) {
             	mDragEventInProgress = true;
-            	mDragEventStartX = event.getX();
+            	mMouseDownX = mouseUpX;
             }
             
+			/*
+			 * Car should only turn when screen has been dragged a certain amount.
+			 * I've tried to align these measurements with those taken to move the home screen.
+			 */
             if (event.getAction() == MotionEvent.ACTION_UP) {
-            	boolean draggedLotsRight = (mDragEventStartX - event.getX()) >=160;
-            	boolean draggedLotsLeft = (event.getX() - mDragEventStartX) >=160;
-            	Log.v(TAG, "X:["+event.getX()+"+] - dragStart["+mDragEventStartX+"] =" + (event.getX() - mDragEventStartX));
+            	boolean draggedLotsRight = (mMouseDownX - mouseUpX) >=240;
+            	boolean draggedLotsLeft = (mouseUpX - mMouseDownX) >=240;
+            	Log.v(TAG, "[right] mouseDownX["+mMouseDownX+"] - mouseUpX:["+mouseUpX+"] =  " + (mMouseDownX - mouseUpX));
+            	Log.v(TAG, "[left] mouseUpX:["+mouseUpX+"+] - mouseDownX["+mMouseDownX+"] = " + (mouseUpX - mMouseDownX));
             	
-            	if( (mDragEventStartX > 150) && draggedLotsRight ){
+//            	if( (mDragEventStartX < event.getX()) && draggedLotsRight ){
+           		if( (mMouseDownX > mouseUpX) && draggedLotsRight ){
             		currAnimDirection = DRIVING_RIGHT;
             		Log.d(TAG, "Driving animation started Right >");
             		new Timer().schedule(new TimerTask(){
@@ -150,7 +154,8 @@ public class Outrun extends WallpaperService {
 						}}, 1000);
             	}
             	
-            	if( (mDragEventStartX < 150) && draggedLotsLeft ){
+//            	if( (mDragEventStartX > event.getX()) && draggedLotsLeft ){
+           		if( (mouseUpX > mMouseDownX) && draggedLotsLeft ){
             		currAnimDirection = DRIVING_LEFT;
             		Log.d(TAG, "Driving animation started < Left");
             		new Timer().schedule(new TimerTask(){
@@ -162,7 +167,7 @@ public class Outrun extends WallpaperService {
             	}
             	
             	mDragEventInProgress = false;
-            	mDragEventStartX = 0;
+            	mMouseDownX = 0;
             }
             super.onTouchEvent(event);
         }
@@ -319,7 +324,7 @@ public class Outrun extends WallpaperService {
         private int currAnimDirection = DRIVING_FORWARD;
         private int currSceneOfDay = TIME_PERIOD_SUNSET;
 
-        private float mDragEventStartX = 0;
+        private float mMouseDownX = 0;
         private boolean mDragEventInProgress = false;
         
     	private int currSceneBGIdx = 0;

@@ -44,21 +44,13 @@ public class Outrun extends WallpaperService {
     }
     
     class OutRunEngine extends Engine {
-
-		private void loadImagesIntoMemory(String imgPrefix, int max, Bitmap[] array) {
-        	Resources res = getResources();
-			for (int i = 0; i< max; i++) {
-				int id = res.getIdentifier(imgPrefix + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
-				array[i] = BitmapFactory.decodeResource(res, id);
+    	
+        private final Runnable mDrawWallpaper = new Runnable() {
+        	public void run() {
+        			drawCarAndRoad();
         	}
-		}
-		private void loadImageIDsIntoMemory(String imgPrefix, int max, int[] array) {
-			Resources res = getResources();
-			for (int i = 0; i< max; i++) {
-				array[i] = res.getIdentifier(imgPrefix + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
-			}
-		}
-        
+        };
+
 		/*
 		 * All IDs of resources needed for the animations
 		 * are stored to cycle through in drawAnim().
@@ -88,8 +80,6 @@ public class Outrun extends WallpaperService {
         	mPaintRoad.setColor(getResources().getColor(R.color.ROAD));
         	mRectRoad = new Rect();
         	mRectRoad.set(0, 685, 480, 800);
-
-
         }
 
 		@Override
@@ -190,7 +180,7 @@ public class Outrun extends WallpaperService {
 			
 			return 0;
 		}
-
+        
         /*
          * Invalidates full canvas. 
          */
@@ -257,6 +247,12 @@ public class Outrun extends WallpaperService {
     		}
 		}
         
+		
+		/*
+		 * Uses cached bitmap if this scene 
+		 * has already been decoded into memory,
+		 * otherwise update cache.
+		 */
         private void drawHorizon(Canvas c){
         	int resId=0, bgId=0;
         	switch(currSceneOfDay){
@@ -287,7 +283,21 @@ public class Outrun extends WallpaperService {
         	}
         }
         
-        /*
+        private void loadImagesIntoMemory(String imgPrefix, int max, Bitmap[] array) {
+			Resources res = getResources();
+			int resId;
+			for (int i = 0; i< max; i++) {
+				resId = res.getIdentifier(imgPrefix + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+				array[i] = BitmapFactory.decodeResource(res, resId);
+			}
+		}
+		private void loadImageIDsIntoMemory(String imgPrefix, int max, int[] array) {
+			Resources res = getResources();
+			for (int i = 0; i< max; i++) {
+				array[i] = res.getIdentifier(imgPrefix + String.format("%03d", i), "drawable", "com.novoda.wallpaper");
+			}
+		}
+		/*
          * Generic animation renderer
          * Rolls over on bounds of array.
          */
@@ -302,12 +312,6 @@ public class Outrun extends WallpaperService {
         	if (picIdx == totalRes) picIdx = 0;
         }
         
-        private final Runnable mDrawWallpaper = new Runnable() {
-        	public void run() {
-        			drawCarAndRoad();
-        	}
-        };
-
         //Only one animation plays at a time and this represents the index.
         private int picIdx = 0;
 

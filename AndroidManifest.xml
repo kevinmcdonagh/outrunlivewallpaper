@@ -2,8 +2,7 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.novoda.wallpaper"
-    android:versionCode="1"
-    android:versionName="1.0">
+    android:versionName="1.1" android:versionCode="2">
     
     <uses-sdk android:minSdkVersion="7" />
     <uses-feature android:name="android.software.live_wallpaper" />

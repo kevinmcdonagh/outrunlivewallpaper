@@ -4,7 +4,6 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import android.app.WallpaperManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -65,8 +64,6 @@ public class Outrun extends WallpaperService {
             loadImageIDsIntoMemory("horiz_day", TOTAL_DAY_RES, mDayPicIds);
             loadImageIDsIntoMemory("horiz_sunset", TOTAL_SUNSET_RES, mSunsetPicIds);
             loadImageIDsIntoMemory("horiz_night", TOTAL_NIGHT_RES, mNightPicIds);
-            currSceneOfDay = Utils.currentPeriodOfDay();
-            currSceneBGIdx = getNewBgInxForPeriod(currSceneOfDay);
             
         	mPaintSky = new Paint();
         	mPaintSky.setStyle(Paint.Style.FILL);
@@ -77,6 +74,8 @@ public class Outrun extends WallpaperService {
         	mPaintRoad.setColor(getResources().getColor(R.color.ROAD));
         	mRectRoad = new Rect();
         	mRectRoad.set(0, 685, 480, 800);
+        	
+			holder = getSurfaceHolder();
         }
 
 		@Override
@@ -142,7 +141,6 @@ public class Outrun extends WallpaperService {
             	Log.v(TAG, "[right] mouseDownX["+mMouseDownX+"] - mouseUpX:["+mouseUpX+"] =  " + (mMouseDownX - mouseUpX));
             	Log.v(TAG, "[left] mouseUpX:["+mouseUpX+"+] - mouseDownX["+mMouseDownX+"] = " + (mouseUpX - mMouseDownX));
             	
-//            	if( (mDragEventStartX < event.getX()) && draggedLotsRight ){
            		if( (mMouseDownX > mouseUpX) && draggedLotsRight ){
             		currAnimDirection = DRIVING_RIGHT;
             		Log.d(TAG, "Driving animation started Right >");
@@ -151,10 +149,9 @@ public class Outrun extends WallpaperService {
 						public void run() {
 							picIdx =0;
 							currAnimDirection = DRIVING_FORWARD;
-						}}, 1000);
+						}}, 1700);
             	}
             	
-//            	if( (mDragEventStartX > event.getX()) && draggedLotsLeft ){
            		if( (mouseUpX > mMouseDownX) && draggedLotsLeft ){
             		currAnimDirection = DRIVING_LEFT;
             		Log.d(TAG, "Driving animation started < Left");
@@ -163,7 +160,7 @@ public class Outrun extends WallpaperService {
 						public void run() {
 							picIdx =0;
 							currAnimDirection = DRIVING_FORWARD;
-						}}, 1000);
+						}}, 1700);
             	}
             	
             	mDragEventInProgress = false;
@@ -216,7 +213,6 @@ public class Outrun extends WallpaperService {
          * Invalidates car animation 
          */
 		void drawCarAndRoad() {
-			final SurfaceHolder holder = getSurfaceHolder();
 			Canvas c = null;
 			try {
 				c = holder.lockCanvas(new Rect(0, 549, 480, 700));
@@ -388,5 +384,7 @@ public class Outrun extends WallpaperService {
 		private Paint mPaintRoad;
 
 		private Rect mRectRoad;
+
+		private SurfaceHolder holder;
     }
 }
